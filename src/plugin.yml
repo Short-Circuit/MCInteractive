@@ -1,0 +1,9 @@
+name: MCInteractive
+version: 1.0
+author: ShortCircuit908
+website: http://dev.bukkit.org/bukkit-plugins/MCInteractive/
+main: com.shortcircuit.mcinteractive.MCInteractive
+commands:
+  breakout:
+    description: Make the targeted block fire a message when powered
+    usage: /<command> <on:TriggerOnMessage> <off:TriggerOffMessage>
