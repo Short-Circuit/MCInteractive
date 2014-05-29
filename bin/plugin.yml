@@ -1,5 +1,5 @@
 name: MCInteractive
-version: 1.2
+version: 1.3
 author: ShortCircuit908
 website: http://dev.bukkit.org/bukkit-plugins/MCInteractive/
 main: com.shortcircuit.mcinteractive.MCInteractive
@@ -9,7 +9,10 @@ commands:
     usage: /<command> <on:onStateMessage> <off:offStateMessage>
   serial:
     description: Manage serial port connections
-    usage: /<command> <action:connect|disconnect> <port:comPort>
+    usage: /<command> <action:(connect|disconnect|list)> <port:comPort>
   trackplayer:
     description: Toggle player tracking
     usage: /<command> <player:playerName>
+  removetrigger:
+    description: Remove the trigger from the targeted block
+    usage: /<command>

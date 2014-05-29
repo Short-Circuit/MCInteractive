@@ -1,6 +1,8 @@
 package com.shortcircuit.mcinteractive;
 
-import java.io.File;
+import gnu.io.CommPortIdentifier;
+
+import java.util.Enumeration;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -20,19 +22,16 @@ import com.shortcircuit.mcinteractive.serial.PortWriter;
 public class MCInteractive extends JavaPlugin{
     public PortWriter pWriter;
     public void onEnable(){
-        File file = new File("config.yml");
-        if(!file.exists()){
-            this.saveDefaultConfig();
-        }
+        Bukkit.getLogger().info("[MCInteractive] MCInteractive by ShortCircuit908");
+        Bukkit.getPluginManager().registerEvents(new RedstoneListener(this), this);
+        Bukkit.getPluginManager().registerEvents(new PlayerListener(this), this);
+        saveDefaultConfig();
         try{
-            pWriter = new PortWriter(this.getConfig().getString("port"));
+            pWriter = new PortWriter(getConfig().getString("port"), null);
         }
         catch(Exception e){
             e.printStackTrace();
         }
-        Bukkit.getPluginManager().registerEvents(new RedstoneListener(this), this);
-        Bukkit.getPluginManager().registerEvents(new PlayerListener(this), this);
-        Bukkit.getLogger().info("[MCInteractive] MCInteractive by ShortCircuit908");
         Bukkit.getLogger().info("[MCInteractive] MCInteractive enabled");
     }
     public void onDisable(){
@@ -43,7 +42,6 @@ public class MCInteractive extends JavaPlugin{
         argument = argument.toLowerCase();
         String output = "";
         for(String arg : args){
-            arg = arg.toLowerCase();
             if(collecting){
                 if(!arg.contains(":")){
                     output += " " + arg;
@@ -52,14 +50,14 @@ public class MCInteractive extends JavaPlugin{
                     break;
                 }
             }
-            if(arg.startsWith(argument + ":")){
-                output = arg.replace(argument + ":", "");
+            if(arg.toLowerCase().startsWith(argument + ":")){
+                output = arg.toLowerCase().replace(argument + ":", "");
                 collecting = true;
             }
         }
         return output;
     }
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings({"deprecation", "unchecked"})
     public boolean onCommand(CommandSender sender, Command cmd, String commandLabel, String[] args){
         if(commandLabel.equalsIgnoreCase("breakout")){
             if(sender instanceof Player){
@@ -99,6 +97,40 @@ public class MCInteractive extends JavaPlugin{
             else{
                 sender.sendMessage(ChatColor.RED + "This is a player-only command");
             }
+            return true;
+        }
+        else if(commandLabel.equalsIgnoreCase("removetrigger")){
+            if(sender instanceof Player){
+                Player player = (Player)sender;
+                if(player.hasPermission("MCInteractive.Trigger.Remove")){
+                    Block block = player.getTargetBlock(null, 5);
+                    if(block.getType() != Material.AIR){
+                        if(block.hasMetadata("BreakoutOn") && block.hasMetadata("BreakoutOff")){
+                            player.sendMessage(ChatColor.AQUA + "Successfully removed the trigger block!");
+                            block.removeMetadata("BreakoutOn", this);
+                            block.removeMetadata("BreakoutOff", this);
+                        }
+                        else{
+                            player.sendMessage(ChatColor.RED + "The targeted block is not a trigger");
+                        }
+                    }
+                    else{
+                        player.sendMessage(ChatColor.RED + "No block in sight!");
+                    }
+                }
+                else{
+                    player.sendMessage(ChatColor.RED + "Insufficient permissions");
+                }
+            }
+            else if(sender instanceof CraftBlockCommandSender){
+                CommandBlock block = (CommandBlock)((CraftBlockCommandSender)sender).getBlock().getState();
+                block.setCommand("");
+                block.update();
+            }
+            else{
+                sender.sendMessage(ChatColor.RED + "This is a player-only command");
+            }
+            return true;
         }
         else if(commandLabel.equalsIgnoreCase("serial")){
             if(sender.hasPermission("MCInteractive.Serial")){
@@ -106,11 +138,12 @@ public class MCInteractive extends JavaPlugin{
                 String port = getParam(args, "port").toUpperCase();
                 if(action.equalsIgnoreCase("connect")){
                     if(!port.equalsIgnoreCase("")){
-                        if(!port.equalsIgnoreCase(this.getConfig().getString("port"))){
+                        if(!port.equalsIgnoreCase(getConfig().getString("port"))){
+                            pWriter.setSender(sender);
                             pWriter.close();
-                            this.getConfig().set("port", port);
-                            this.saveConfig();
-                            pWriter = new PortWriter(port);
+                            getConfig().set("port", port);
+                            saveConfig();
+                            pWriter = new PortWriter(port, sender);
                         }
                         else{
                             sender.sendMessage(ChatColor.AQUA + "Already connected to " + port);
@@ -121,9 +154,23 @@ public class MCInteractive extends JavaPlugin{
                     }
                 }
                 else if(action.equalsIgnoreCase("disconnect")){
-                    this.getConfig().set("port", "");
-                    this.saveConfig();
+                    getConfig().set("port", "");
+                    saveConfig();
                     pWriter.close();
+                }
+                else if(action.equalsIgnoreCase("list")){
+                    sender.sendMessage(ChatColor.AQUA + "[MCInteractive] Available serial ports:");
+                    Enumeration<CommPortIdentifier> ports = CommPortIdentifier.getPortIdentifiers();
+                    while(ports.hasMoreElements()){
+                        CommPortIdentifier portID = ports.nextElement();
+                        if(portID.getPortType() == CommPortIdentifier.PORT_SERIAL){
+                            String add = ChatColor.GREEN + "Available";
+                            if(portID.isCurrentlyOwned()){
+                                add = ChatColor.RED + "In use (" + portID.getCurrentOwner() + ")";
+                            }
+                            sender.sendMessage(ChatColor.AQUA + portID.getName() + ": " + add);
+                        }
+                    }
                 }
                 else if(action.equalsIgnoreCase("")){
                     sender.sendMessage(ChatColor.RED + "You must provide the paramater <action>");
@@ -135,6 +182,7 @@ public class MCInteractive extends JavaPlugin{
             else{
                 sender.sendMessage(ChatColor.RED + "Insufficient permissions");
             }
+            return true;
         }
         else if(commandLabel.equalsIgnoreCase("trackplayer")){
             if(sender.hasPermission("MCInteractive.Trigger.Player")){
@@ -162,7 +210,8 @@ public class MCInteractive extends JavaPlugin{
             else{
                 sender.sendMessage(ChatColor.RED + "Insufficient permissions");
             }
+            return true;
         }
-        return true;
+        return false;
     }
 }

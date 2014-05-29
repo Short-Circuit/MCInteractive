@@ -3,85 +3,97 @@ package com.shortcircuit.mcinteractive.serial;
 import gnu.io.CommPortIdentifier;
 import gnu.io.SerialPort;
 
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Enumeration;
 
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.command.CommandSender;
 @SuppressWarnings("rawtypes")
 public class PortWriter{
     private Enumeration ports = null;
-    private CommPortIdentifier pID = null;
-    private OutputStream outStream = null;
-    private SerialPort serPort = null;
+    private CommPortIdentifier portID = null;
+    private OutputStream stream = null;
+    private InputStream inStream = null;
+    private SerialPort serial = null;
     private String port = null;
-    public PortWriter(String port){
-        this.port = port;
-        try{
-            if(initialize()){
-                if(!pID.isCurrentlyOwned()){
-                    serPort = (SerialPort)pID.open("MCInteractive",2000);
-                    outStream = serPort.getOutputStream();
-                    serPort.setSerialPortParams(9600, SerialPort.DATABITS_8,
-                            SerialPort.STOPBITS_1,
-                            SerialPort.PARITY_NONE);
-                    Bukkit.getLogger().info("[MCInteractive] Connected to " + port);
+    private CommandSender sender = null;
+    public PortWriter(String port, CommandSender sender){
+        if(!port.equals("")){
+            this.port = port;
+            if(sender == null){
+                sender = Bukkit.getConsoleSender();
+            }
+            this.sender = sender;
+            try{
+                if(initialize()){
+                    if(!portID.isCurrentlyOwned()){
+                        serial = (SerialPort)portID.open("MCInteractive",2000);
+                        stream = serial.getOutputStream();
+                        inStream = serial.getInputStream();
+                        serial.setSerialPortParams(9600, SerialPort.DATABITS_8,
+                                SerialPort.STOPBITS_1,
+                                SerialPort.PARITY_NONE);
+                        sender.sendMessage(ChatColor.AQUA + "[MCInteractive] Connected to " + port);
+                    }
+                    else{
+                        sender.sendMessage(ChatColor.RED + "[MCInteractive] " + port + " is in use");
+                    }
                 }
                 else{
-                    Bukkit.getLogger().severe("[MCInteractive] " + port + " is in use");
+                    sender.sendMessage(ChatColor.RED + "[MCInteractive] Failed to open " + port);
                 }
             }
-            else{
-                Bukkit.getLogger().severe("[MCInteractive] Failed to open " + port);
+            catch(Exception e){
+                sender.sendMessage(ChatColor.RED + "[MCInteractive] Failed to open " + port);
             }
-        }
-        catch(Exception e){
-            Bukkit.getLogger().severe("[MCInteractive] Failed to open " + port);
-            e.printStackTrace();
         }
     }    
 
     public boolean initialize(){
         ports = CommPortIdentifier.getPortIdentifiers();
         while(ports.hasMoreElements()){
-            pID = (CommPortIdentifier)ports.nextElement();
-            if(pID.getPortType() == CommPortIdentifier.PORT_SERIAL){
-                if(pID.getName().equals(port)){
-                    Bukkit.getLogger().info("[MCInteractive] " + port + " found");
+            portID = (CommPortIdentifier)ports.nextElement();
+            if(portID.getPortType() == CommPortIdentifier.PORT_SERIAL){
+                if(portID.getName().equals(port)){
+                    sender.sendMessage(ChatColor.AQUA + "[MCInteractive] " + port + " found");
                     return true;
                 }
             }
         }
-        Bukkit.getLogger().severe("[MCInteractive] " + port + " not found");
+        sender.sendMessage(ChatColor.RED + "[MCInteractive] " + port + " not found");
         return false;
     }
     public void write(String value){
         try{
-            outStream.write(value.getBytes());
-            outStream.flush();
-            Bukkit.getLogger().info(value);
+            stream.write(value.getBytes());
+            stream.flush();
+            sender.sendMessage(value);
         }
         catch(Exception e){
-            Bukkit.getLogger().severe("[MCInteractive] Failed to write to " + port);
+            sender.sendMessage(ChatColor.RED + "[MCInteractive] Failed to write to " + port);
         }
+    }
+    public void setSender(CommandSender sender){
+        if(sender == null){
+            sender = Bukkit.getConsoleSender();
+        }
+        this.sender = sender;
     }
     public void close(){
         try{
-            if(outStream != null){
-                outStream.close();
+            if(serial != null){
+                inStream.close();
+                stream.close();
+                serial.removeEventListener();
+                serial.close();
+                sender.sendMessage(ChatColor.AQUA + "[MCInteractive] Disconnected from " + port);
+                port = null;
             }
-            if(serPort != null){
-                serPort.removeEventListener();
-                serPort.close();
-            }
-            pID = null;
-            ports = null;
-            outStream = null;
-            serPort = null;
-            Bukkit.getLogger().info("[MCInteractive] Disconnected from " + port);
-            port = null;
         }
         catch(Exception e){
-            Bukkit.getLogger().severe("[MCInteractive] Failed to close " + port);
+            sender.sendMessage(ChatColor.RED + "[MCInteractive] Failed to close " + port);
         }
     }
 }
