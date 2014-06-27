@@ -35,12 +35,12 @@ public class PlayerListener implements Listener{
                 int newYaw = (int)(Math.atan2(to.getDirection().getX(), to.getDirection().getZ()) * 180 / Math.PI);
                 int oldPitch = (int)(Math.atan2(from.getDirection().getX(), from.getDirection().getY()) * 180 / Math.PI);
                 int newPitch = (int)(Math.atan2(to.getDirection().getX(), to.getDirection().getY()) * 180 / Math.PI);
-                main.pWriter.write("Name:" + player.getName());
-                main.pWriter.write("Yaw:" + (newYaw - oldYaw));
-                main.pWriter.write("Pitch:" + (newPitch - oldPitch));
-                main.pWriter.write("X:" + (newX - oldX));
-                main.pWriter.write("Y:" + (newY - oldY));
-                main.pWriter.write("z:" + (newZ - oldZ));
+                main.getPortWriter().write("Name:" + player.getName());
+                main.getPortWriter().write("Yaw:" + (newYaw - oldYaw));
+                main.getPortWriter().write("Pitch:" + (newPitch - oldPitch));
+                main.getPortWriter().write("X:" + (newX - oldX));
+                main.getPortWriter().write("Y:" + (newY - oldY));
+                main.getPortWriter().write("z:" + (newZ - oldZ));
             }
         }
         else{
@@ -52,8 +52,8 @@ public class PlayerListener implements Listener{
         Player player = event.getPlayer();
         if(player.hasMetadata("isTracking")){
             if(player.getMetadata("isTracking").get(0).asBoolean()){
-                main.pWriter.write("Name:" + player.getName());
-                main.pWriter.write("Action:" + event.getAction());
+                main.getPortWriter().write("Name:" + player.getName());
+                main.getPortWriter().write("Action:" + event.getAction());
             }
         }
     }
@@ -62,8 +62,8 @@ public class PlayerListener implements Listener{
         Player player = event.getPlayer();
         if(player.hasMetadata("isTracking")){
             if(player.getMetadata("isTracking").get(0).asBoolean()){
-                main.pWriter.write("Name:" + player.getName());
-                main.pWriter.write("Message:" + event.getMessage());
+                main.getPortWriter().write("Name:" + player.getName());
+                main.getPortWriter().write("Message:" + event.getMessage());
             }
         }
     }
@@ -73,8 +73,8 @@ public class PlayerListener implements Listener{
             Player player = (Player)event.getEntity();
             if(player.hasMetadata("isTracking")){
                 if(player.getMetadata("isTracking").get(0).asBoolean()){
-                    main.pWriter.write("Name:" + player.getName());
-                    main.pWriter.write("Projectile:ARROW");
+                    main.getPortWriter().write("Name:" + player.getName());
+                    main.getPortWriter().write("Projectile:ARROW");
                 }
             }
         } 

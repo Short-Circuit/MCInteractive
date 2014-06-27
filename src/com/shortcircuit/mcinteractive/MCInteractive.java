@@ -214,4 +214,7 @@ public class MCInteractive extends JavaPlugin{
         }
         return false;
     }
+    public PortWriter getPortWriter(){
+        return pWriter;
+    }
 }

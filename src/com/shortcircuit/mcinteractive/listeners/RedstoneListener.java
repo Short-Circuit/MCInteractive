@@ -33,7 +33,7 @@ public class RedstoneListener implements Listener{
                 if(newState){
                     state = "BreakoutOn";
                 }
-                main.pWriter.write(block.getMetadata(state).get(0).asString());
+                main.getPortWriter().write(block.getMetadata(state).get(0).asString());
             }
         }
     }
@@ -68,7 +68,7 @@ public class RedstoneListener implements Listener{
                         if(newState){
                             state = "BreakoutOn";
                         }
-                        main.pWriter.write(block.getMetadata(state).get(0).asString());
+                        main.getPortWriter().write(block.getMetadata(state).get(0).asString());
                     }
                 }
                 catch(Exception e){

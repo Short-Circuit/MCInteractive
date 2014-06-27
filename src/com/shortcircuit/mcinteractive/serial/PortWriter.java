@@ -66,13 +66,14 @@ public class PortWriter{
         return false;
     }
     public void write(String value){
-        try{
-            stream.write(value.getBytes());
-            stream.flush();
-            sender.sendMessage(value);
-        }
-        catch(Exception e){
-            sender.sendMessage(ChatColor.RED + "[MCInteractive] Failed to write to " + port);
+        if(stream != null){
+            try{
+                stream.write(value.getBytes());
+                stream.flush();
+            }
+            catch(Exception e){
+                sender.sendMessage(ChatColor.RED + "[MCInteractive] Failed to write to " + port);
+            }
         }
     }
     public void setSender(CommandSender sender){
