@@ -1,6 +1,7 @@
 package com.shortcircuit.mcinteractive;
 
 import gnu.io.CommPortIdentifier;
+import gnu.io.SerialPort;
 
 import java.util.Enumeration;
 
@@ -21,6 +22,19 @@ import com.shortcircuit.mcinteractive.serial.PortWriter;
 
 public class MCInteractive extends JavaPlugin{
     public PortWriter pWriter;
+    public void onLoad(){
+        try{
+            int x = SerialPort.FLOWCONTROL_NONE;
+            if(x != 0 || x == 0){
+                Bukkit.getLogger().info("[MCInteractive] Everything OK");
+            }
+        }
+        catch(Exception e){
+            Bukkit.getLogger().severe("[MCInteractive] RXTX library not found");
+            Bukkit.getLogger().severe("[MCInteractive] The library may be downloaded at mfizz.com/oss/rxtx-for-java");
+            setEnabled(false);
+        }
+    }
     public void onEnable(){
         Bukkit.getLogger().info("[MCInteractive] MCInteractive by ShortCircuit908");
         Bukkit.getPluginManager().registerEvents(new RedstoneListener(this), this);
@@ -30,7 +44,9 @@ public class MCInteractive extends JavaPlugin{
             pWriter = new PortWriter(getConfig().getString("port"), null);
         }
         catch(Exception e){
-            e.printStackTrace();
+            Bukkit.getLogger().severe("[MCInteractive] RXTX library not found");
+            Bukkit.getLogger().severe("[MCInteractive] The library may be downloaded at mfizz.com/oss/rxtx-for-java");
+            setEnabled(false);
         }
         Bukkit.getLogger().info("[MCInteractive] MCInteractive enabled");
     }
