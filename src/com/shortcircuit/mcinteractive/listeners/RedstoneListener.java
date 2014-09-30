@@ -1,5 +1,7 @@
 package com.shortcircuit.mcinteractive.listeners;
 
+import java.io.IOException;
+
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.event.EventHandler;
@@ -12,9 +14,9 @@ import com.shortcircuit.mcinteractive.MCInteractive;
 public class RedstoneListener implements Listener{
     final BlockFace[] dirs = {BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST,
             BlockFace.UP, BlockFace.DOWN, BlockFace.SELF};
-    private MCInteractive main;
-    public RedstoneListener(MCInteractive main){
-        this.main = main;
+    private MCInteractive mc_interactive;
+    public RedstoneListener(MCInteractive mc_interactive){
+        this.mc_interactive = mc_interactive;
     }
     @EventHandler (priority = EventPriority.MONITOR)
     public void onRedstone(final BlockRedstoneEvent event){
@@ -25,15 +27,18 @@ public class RedstoneListener implements Listener{
             for(BlockFace face : dirs){
                 block = event.getBlock().getRelative(face);
                 if(block.hasMetadata("BreakoutOn") && block.hasMetadata("BreakoutOff")){
+                    String state = "BreakoutOff";
+                    if(newState){
+                        state = "BreakoutOn";
+                    }
+                    try {
+                        mc_interactive.getSerialManager().write(block.getMetadata(state).get(0).asString());
+                    }
+                    catch(IOException e) {
+                        e.printStackTrace();
+                    }
                     break;
                 }
-            }
-            if(block.hasMetadata("BreakoutOn") && block.hasMetadata("BreakoutOff")){
-                String state = "BreakoutOff";
-                if(newState){
-                    state = "BreakoutOn";
-                }
-                main.getPortWriter().write(block.getMetadata(state).get(0).asString());
             }
         }
     }
@@ -68,7 +73,7 @@ public class RedstoneListener implements Listener{
                         if(newState){
                             state = "BreakoutOn";
                         }
-                        main.getPortWriter().write(block.getMetadata(state).get(0).asString());
+                        mc_interactive.getSerialManager().write(block.getMetadata(state).get(0).asString());
                     }
                 }
                 catch(Exception e){

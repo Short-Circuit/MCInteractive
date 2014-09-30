@@ -1,8 +1,9 @@
 package com.shortcircuit.mcinteractive;
 
 import gnu.io.CommPortIdentifier;
-import gnu.io.SerialPort;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Enumeration;
 
 import org.bukkit.Bukkit;
@@ -18,67 +19,132 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import com.shortcircuit.mcinteractive.listeners.PlayerListener;
 import com.shortcircuit.mcinteractive.listeners.RedstoneListener;
-import com.shortcircuit.mcinteractive.serial.PortWriter;
+import com.shortcircuit.mcinteractive.listeners.ThingeyListener;
+import com.shortcircuit.mcinteractive.serial.SerialManager;
 
 public class MCInteractive extends JavaPlugin{
-    public PortWriter pWriter;
+    private SerialManager serial_manager;
     public void onLoad(){
-        try{
-            int x = SerialPort.FLOWCONTROL_NONE;
-            if(x != 0 || x == 0){
-                Bukkit.getLogger().info("[MCInteractive] Everything OK");
-            }
-        }
-        catch(Exception e){
-            Bukkit.getLogger().severe("[MCInteractive] RXTX library not found");
-            Bukkit.getLogger().severe("[MCInteractive] The library may be downloaded at mfizz.com/oss/rxtx-for-java");
-            setEnabled(false);
-        }
+
     }
     public void onEnable(){
+        if(!verifyRXTX()) {
+            Bukkit.getLogger().severe("[MCInteractive] Cannot proceed with enabling\n"
+                    + "\tRXTX library not found\n"
+                    + "\tThe library may be downloaded at mfizz.com/oss/rxtx-for-java\n"
+                    + "\tDisabling...");
+            setEnabled(false);
+            return;
+        }
+        else {
+            Bukkit.getLogger().info("[MCInteractive] RXTX library located");
+        }
+        Bukkit.getPluginManager().registerEvents(new ThingeyListener(), this);
         Bukkit.getLogger().info("[MCInteractive] MCInteractive by ShortCircuit908");
         Bukkit.getPluginManager().registerEvents(new RedstoneListener(this), this);
         Bukkit.getPluginManager().registerEvents(new PlayerListener(this), this);
         saveDefaultConfig();
-        try{
-            pWriter = new PortWriter(getConfig().getString("port"), null);
-        }
-        catch(Exception e){
-            Bukkit.getLogger().severe("[MCInteractive] RXTX library not found");
-            Bukkit.getLogger().severe("[MCInteractive] The library may be downloaded at mfizz.com/oss/rxtx-for-java");
-            setEnabled(false);
+        serial_manager = new SerialManager();
+        if(!getConfig().getString("port").equals("")) {
+            serial_manager.connect(getConfig().getString("port"), getConfig().getInt("baud"));
         }
         Bukkit.getLogger().info("[MCInteractive] MCInteractive enabled");
     }
     public void onDisable(){
-        pWriter.close();
+        serial_manager.disconnectSilently();
+        Bukkit.getLogger().info("[MCInteractive] MCInteractive disabled");
     }
-    public String getParam(String[] args, String argument){
-        boolean collecting = false;
-        argument = argument.toLowerCase();
-        String output = "";
-        for(String arg : args){
-            if(collecting){
-                if(!arg.contains(":")){
-                    output += " " + arg;
-                }
-                else{
-                    break;
-                }
-            }
-            if(arg.toLowerCase().startsWith(argument + ":")){
-                output = arg.toLowerCase().replace(argument + ":", "");
-                collecting = true;
-            }
-        }
-        return output;
-    }
-    @SuppressWarnings({"deprecation", "unchecked"})
+    
+    /*
+     * TODO: Make this pretty
+     */
+    @SuppressWarnings({"unchecked", "deprecation"})
     public boolean onCommand(CommandSender sender, Command cmd, String commandLabel, String[] args){
-        if(commandLabel.equalsIgnoreCase("breakout")){
+        if(commandLabel.equalsIgnoreCase("serial")) {
+            if(args.length == 0) {
+                return getServer().dispatchCommand(sender, "help serial");
+            }
+            if(args[0].equalsIgnoreCase("connect")) {
+                if(sender.hasPermission("mcinteractive.serial")) {
+                    if(args.length >= 2) {
+                        getConfig().set("port", args[1].toUpperCase());
+                    }
+                    else {
+                        return getServer().dispatchCommand(sender, "help serial");
+                    }
+                    if(args.length >= 3) {
+                        getConfig().set("baud", Integer.parseInt(args[2]));
+                    }
+                    saveConfig();
+                    int baud = getConfig().getInt("baud");
+                    serial_manager.connect(args[1].toUpperCase(), baud);
+                }
+                else {
+                    sender.sendMessage(ChatColor.RED + "Insufficient permissions");
+                }
+            }
+            else if(args[0].equalsIgnoreCase("disconnect")) {
+                if(sender.hasPermission("mcinteractive.serial")) {
+                    getConfig().set("port", "");
+                    serial_manager.disconnectSilently();
+                    saveConfig();
+                }
+                else {
+                    sender.sendMessage(ChatColor.RED + "Insufficient permissions");
+                }
+            }
+            else if(args[0].equalsIgnoreCase("list")) {
+                if(sender.hasPermission("mcinteractive.serial.list")) {
+                    sender.sendMessage(ChatColor.AQUA + "[MCInteractive] Available serial ports:");
+                    Enumeration<CommPortIdentifier> ports = CommPortIdentifier.getPortIdentifiers();
+                    while(ports.hasMoreElements()){
+                        CommPortIdentifier portID = ports.nextElement();
+                        if(portID.getPortType() == CommPortIdentifier.PORT_SERIAL){
+                            String add = ChatColor.GREEN + "Available";
+                            if(portID.isCurrentlyOwned()){
+                                add = ChatColor.RED + "In use (" + portID.getCurrentOwner() + ")";
+                            }
+                            sender.sendMessage(ChatColor.AQUA + portID.getName() + ": " + add);
+                        }
+                    }
+                }
+                else {
+                    sender.sendMessage(ChatColor.RED + "Insufficient permissions");
+                }
+            }
+            else if(args[0].equalsIgnoreCase("sendmessage")) {
+                if(sender.hasPermission("mcinteractive.serial.sendmessage")) {
+                    if(args.length >= 2) {
+                        String message = args[1];
+                        if(args.length >= 3) {
+                            for(int i = 2; i < args.length; i++) {
+                                message += " " + args[i];
+                            }
+                        }
+                        try {
+                            serial_manager.write(message);
+                        }
+                        catch(IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    else {
+                        return getServer().dispatchCommand(sender, "help serial");
+                    }
+                }
+                else {
+                    sender.sendMessage(ChatColor.RED + "Insufficient permissions");
+                }
+            }
+            else {
+                return getServer().dispatchCommand(sender, "help serial");
+            }
+            return true;
+        }
+        else if(commandLabel.equalsIgnoreCase("breakout")) {
             if(sender instanceof Player){
                 Player player = (Player)sender;
-                if(player.hasPermission("MCInteractive.Trigger.Create")){
+                if(player.hasPermission("mcinteractive.trigger.create")){
                     if(args.length >= 2){
                         String triggerOn = getParam(args, "on");
                         String triggerOff = getParam(args, "off");
@@ -115,10 +181,10 @@ public class MCInteractive extends JavaPlugin{
             }
             return true;
         }
-        else if(commandLabel.equalsIgnoreCase("removetrigger")){
+        else if(commandLabel.equalsIgnoreCase("removetrigger")) {
             if(sender instanceof Player){
                 Player player = (Player)sender;
-                if(player.hasPermission("MCInteractive.Trigger.Remove")){
+                if(player.hasPermission("mcinteractive.trigger.remove")){
                     Block block = player.getTargetBlock(null, 5);
                     if(block.getType() != Material.AIR){
                         if(block.hasMetadata("BreakoutOn") && block.hasMetadata("BreakoutOff")){
@@ -148,71 +214,21 @@ public class MCInteractive extends JavaPlugin{
             }
             return true;
         }
-        else if(commandLabel.equalsIgnoreCase("serial")){
-            if(sender.hasPermission("MCInteractive.Serial")){
-                String action = getParam(args, "action");
-                String port = getParam(args, "port").toUpperCase();
-                if(action.equalsIgnoreCase("connect")){
-                    if(!port.equalsIgnoreCase("")){
-                        if(!port.equalsIgnoreCase(getConfig().getString("port"))){
-                            pWriter.setSender(sender);
-                            pWriter.close();
-                            getConfig().set("port", port);
-                            saveConfig();
-                            pWriter = new PortWriter(port, sender);
-                        }
-                        else{
-                            sender.sendMessage(ChatColor.AQUA + "Already connected to " + port);
-                        }
-                    }
-                    else{
-                        sender.sendMessage(ChatColor.RED + "You must provide the paramater <port>");
-                    }
-                }
-                else if(action.equalsIgnoreCase("disconnect")){
-                    getConfig().set("port", "");
-                    saveConfig();
-                    pWriter.close();
-                }
-                else if(action.equalsIgnoreCase("list")){
-                    sender.sendMessage(ChatColor.AQUA + "[MCInteractive] Available serial ports:");
-                    Enumeration<CommPortIdentifier> ports = CommPortIdentifier.getPortIdentifiers();
-                    while(ports.hasMoreElements()){
-                        CommPortIdentifier portID = ports.nextElement();
-                        if(portID.getPortType() == CommPortIdentifier.PORT_SERIAL){
-                            String add = ChatColor.GREEN + "Available";
-                            if(portID.isCurrentlyOwned()){
-                                add = ChatColor.RED + "In use (" + portID.getCurrentOwner() + ")";
-                            }
-                            sender.sendMessage(ChatColor.AQUA + portID.getName() + ": " + add);
-                        }
-                    }
-                }
-                else if(action.equalsIgnoreCase("")){
-                    sender.sendMessage(ChatColor.RED + "You must provide the paramater <action>");
-                }
-                else{
-                    sender.sendMessage(ChatColor.RED + "Invalid action. Possible paramaters are \"connect\" and \"disconnect\"");
-                }
-            }
-            else{
-                sender.sendMessage(ChatColor.RED + "Insufficient permissions");
-            }
-            return true;
-        }
-        else if(commandLabel.equalsIgnoreCase("trackplayer")){
-            if(sender.hasPermission("MCInteractive.Trigger.Player")){
+        else if(commandLabel.equalsIgnoreCase("trackplayer")) {
+            if(sender.hasPermission("mcinteractive.trigger.player")){
                 String name = getParam(args, "player");
                 if(!name.equalsIgnoreCase("")){
                     Player player = Bukkit.getPlayer(name);
                     if(player != null){
                         if(player.hasMetadata("isTracking")){
-                            player.setMetadata("isTracking", new EntityMetadata(this, !player.getMetadata("isTracking").get(0).asBoolean()));
+                            player.setMetadata("isTracking", new EntityMetadata(this,
+                                    !player.getMetadata("isTracking").get(0).asBoolean()));
                         }
                         else{
                             player.setMetadata("isTracking", new EntityMetadata(this, true));
                         }
-                        sender.sendMessage(ChatColor.AQUA + "Set tracking for " + ChatColor.YELLOW + player.getName() + ChatColor.AQUA + " to "
+                        sender.sendMessage(ChatColor.AQUA + "Set tracking for " + ChatColor.YELLOW
+                                + player.getName() + ChatColor.AQUA + " to "
                                 + ChatColor.YELLOW + player.getMetadata("isTracking").get(0).asBoolean());
                     }
                     else{
@@ -230,7 +246,34 @@ public class MCInteractive extends JavaPlugin{
         }
         return false;
     }
-    public PortWriter getPortWriter(){
-        return pWriter;
+    public boolean verifyRXTX() {
+        String java_home = System.getProperty("java.home");
+        File rxtx_jar = new File(java_home + "/lib/ext/RXTXcomm.jar");
+        File rxtx_parallel = new File(java_home + "/bin/rxtxParallel.dll");
+        File rxtx_serial = new File(java_home + "/bin/rxtxSerial.dll");
+        return (rxtx_jar.exists() && rxtx_parallel.exists() && rxtx_serial.exists());
+    }
+    public SerialManager getSerialManager() {
+        return serial_manager;
+    }
+    private String getParam(String[] args, String argument){
+        boolean collecting = false;
+        argument = argument.toLowerCase();
+        String output = "";
+        for(String arg : args){
+            if(collecting){
+                if(!arg.contains(":")){
+                    output += " " + arg;
+                }
+                else{
+                    break;
+                }
+            }
+            if(arg.toLowerCase().startsWith(argument + ":")){
+                output = arg.toLowerCase().replace(argument + ":", "");
+                collecting = true;
+            }
+        }
+        return output;
     }
 }
