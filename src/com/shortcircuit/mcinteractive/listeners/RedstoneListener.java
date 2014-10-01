@@ -12,9 +12,10 @@ import org.bukkit.event.block.BlockRedstoneEvent;
 import com.shortcircuit.mcinteractive.MCInteractive;
 
 public class RedstoneListener implements Listener{
-    final BlockFace[] dirs = {BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST,
+    protected final BlockFace[] dirs = {BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST,
             BlockFace.UP, BlockFace.DOWN, BlockFace.SELF};
-    private MCInteractive mc_interactive;
+    protected MCInteractive mc_interactive;
+    
     public RedstoneListener(MCInteractive mc_interactive){
         this.mc_interactive = mc_interactive;
     }
@@ -26,13 +27,16 @@ public class RedstoneListener implements Listener{
             Block block = null;
             for(BlockFace face : dirs){
                 block = event.getBlock().getRelative(face);
-                if(block.hasMetadata("BreakoutOn") && block.hasMetadata("BreakoutOff")){
-                    String state = "BreakoutOff";
-                    if(newState){
-                        state = "BreakoutOn";
-                    }
+                if(mc_interactive.getTrackingManager().isTracking(block)) {
                     try {
-                        mc_interactive.getSerialManager().write(block.getMetadata(state).get(0).asString());
+                        if(newState) {
+                            mc_interactive.getSerialManager().write(mc_interactive.getTrackingManager()
+                                    .getMCIBlock(block).getOnMessage());
+                        }
+                        else {
+                            mc_interactive.getSerialManager().write(mc_interactive.getTrackingManager()
+                                    .getMCIBlock(block).getOffMessage());
+                        }
                     }
                     catch(IOException e) {
                         e.printStackTrace();
@@ -42,45 +46,4 @@ public class RedstoneListener implements Listener{
             }
         }
     }
-    /*
-    @EventHandler (priority = EventPriority.MONITOR)
-    public void onRedstone(final BlockRedstoneEvent event){
-        boolean oldState = event.getOldCurrent() > 0;
-        boolean newState = event.getNewCurrent() > 0;
-        if(oldState != newState){
-            Block block = event.getBlock();
-            Block trigger = null;
-            if(block.hasMetadata("BreakoutOn") && block.hasMetadata("BreakoutOff")){
-                Location loc = block.getLocation();
-                BlockFace dir = null;
-                int yaw = (int)(Math.atan2(loc.getDirection().getX(), loc.getDirection().getZ()) * 180 / Math.PI);
-                int pitch = (int)(Math.atan2(loc.getDirection().getX(), loc.getDirection().getY()) * 180 / Math.PI);
-                if(yaw > 45 && yaw <= 135){
-                   dir = BlockFace.NORTH;
-                }
-                else if(yaw > 135 && yaw <= 225){
-                    dir = BlockFace.EAST;
-                }
-                else if(yaw > 225 && yaw <= 315){
-                    dir = BlockFace.SOUTH;
-                }
-                else{
-                    dir = BlockFace.WEST;
-                }
-                try{
-                    if((!oldState && block.isBlockPowered()) || (!newState && !block.isBlockPowered())){
-                        String state = "BreakoutOff";
-                        if(newState){
-                            state = "BreakoutOn";
-                        }
-                        mc_interactive.getSerialManager().write(block.getMetadata(state).get(0).asString());
-                    }
-                }
-                catch(Exception e){
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
-     */
 }

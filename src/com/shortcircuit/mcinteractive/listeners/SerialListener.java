@@ -4,10 +4,8 @@ import gnu.io.CommPortIdentifier;
 import gnu.io.SerialPortEvent;
 import gnu.io.SerialPortEventListener;
 
-import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.util.Scanner;
 
 import org.bukkit.Bukkit;
 
@@ -19,37 +17,25 @@ import com.shortcircuit.mcinteractive.events.MCISerialPortEvent;
  * 
  */
 public class SerialListener implements SerialPortEventListener{
-    protected BufferedReader reader;
+    protected Scanner scanner;
     protected CommPortIdentifier port_id;
-    
-    public SerialListener(CommPortIdentifier port_id, InputStream input_stream) {
+
+    public SerialListener(CommPortIdentifier port_id, InputStream input_stream, String delimiter) {
         this.port_id = port_id;
-        this.reader = new BufferedReader(new InputStreamReader(input_stream));
+        scanner = new Scanner(input_stream);
+        scanner.useDelimiter(delimiter);
     }
-    
-    /*
-     * Called on each SerialPortEvent
-     */
+
     @Override
-    public void serialEvent(SerialPortEvent event) {
-        // Read the available data
+    public synchronized void serialEvent(SerialPortEvent event) {
         if(event.getEventType() == SerialPortEvent.DATA_AVAILABLE) {
             readSerial();
         }
-        // Fire a new MCISerialPortEvent
         Bukkit.getPluginManager().callEvent(new MCISerialPortEvent(port_id, event));
     }
     
-    /*
-     * TODO: Read the data from the serial port
-     */
-    private void readSerial() {
-        try {
-            String message = reader.readLine();
-            Bukkit.getPluginManager().callEvent(new MCIMessageReceivedEvent(port_id, message));
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-        }
+    protected void readSerial() {
+        String message = scanner.next();
+        Bukkit.getPluginManager().callEvent(new MCIMessageReceivedEvent(port_id, message));
     }
 }

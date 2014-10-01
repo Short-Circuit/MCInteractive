@@ -25,12 +25,17 @@ import com.shortcircuit.mcinteractive.listeners.SerialListener;
  */
 public class SerialManager {
     protected SerialPort serial_port;
-    protected InputStream in_stream;
-    protected OutputStream out_stream;
+    protected InputStream input_stream;
+    protected OutputStream output_stream;
     protected int baud;
     protected CommPortIdentifier port_id;
     protected SerialListener serial_listener;
+    protected String delimiter;
     
+    public SerialManager(String delimiter) {
+        this.delimiter = delimiter;
+    }
+
     /*
      * TODO: Attempt to connect to a serial port with the given BAUD rate
      */
@@ -75,7 +80,7 @@ public class SerialManager {
             alert(message);
         }
     }
-    
+
     /*
      * TODO: Disconnect from the serial port without throwing exceptions
      */
@@ -86,7 +91,7 @@ public class SerialManager {
         catch(Exception e) {
         }
     }
-    
+
     /*
      * TODO: Initialize the serial port with the desired settings
      */
@@ -101,14 +106,14 @@ public class SerialManager {
                 SerialPort.STOPBITS_1,
                 SerialPort.PARITY_NONE);
         // Get the input and output streams
-        out_stream = serial_port.getOutputStream();
-        in_stream = serial_port.getInputStream();
+        output_stream = serial_port.getOutputStream();
+        input_stream = serial_port.getInputStream();
         String message = ChatColor.AQUA + "[MCInteractive] Connected to " + ChatColor.LIGHT_PURPLE
                 + port_id.getName();
         alert(message);
         // Attempt to register the top-level serial port event listener
         try {
-            serial_listener = new SerialListener(port_id, in_stream);
+            serial_listener = new SerialListener(port_id, input_stream, delimiter);
             serial_port.addEventListener(serial_listener);
             Bukkit.getConsoleSender().sendMessage(ChatColor.AQUA + "[MCInteractive] Top-level listener "
                     + "registered to " + ChatColor.LIGHT_PURPLE + port_id.getName());
@@ -121,7 +126,7 @@ public class SerialManager {
         }
         Bukkit.getPluginManager().callEvent(new MCISerialConnectEvent(port_id));
     }
-    
+
     /*
      * Cleanly disconnect from the serial port
      */
@@ -131,30 +136,32 @@ public class SerialManager {
         // Remove the top-level listener
         serial_port.removeEventListener();
         // Close the streams and port
-        in_stream.close();
-        out_stream.close();
+        input_stream.close();
+        output_stream.close();
         serial_port.close();
         serial_port = null;
         Bukkit.getPluginManager().callEvent(new MCISerialDisconnectEvent(port_id));
         alert(message);
     }
-    
+
     public boolean isConnected() {
         return serial_port != null;
     }
-    
+
     public void write(String value) throws NullPointerException, IOException{
-        if(!value.endsWith("\\n")) {
-            value += "\\n";
+        if(isConnected()) {
+            if(!value.endsWith(delimiter)) {
+                value += delimiter;
+            }
+            output_stream.write(value.getBytes());
+            output_stream.flush();
         }
-        out_stream.write(value.getBytes());
-        out_stream.flush();
     }
-    
+
     public CommPortIdentifier getCommPortIdentifier() {
         return port_id;
     }
-    
+
     protected void alert(String message) {
         Bukkit.getServer().broadcast(message, "MCInteractive.Serial");
         Bukkit.getConsoleSender().sendMessage(message);

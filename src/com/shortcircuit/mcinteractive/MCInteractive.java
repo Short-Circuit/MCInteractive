@@ -6,6 +6,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Enumeration;
 
+import net.minecraft.util.org.apache.commons.lang3.StringEscapeUtils;
+
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -13,6 +15,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.CommandBlock;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.bukkit.craftbukkit.v1_7_R3.command.CraftBlockCommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -20,12 +23,16 @@ import org.bukkit.plugin.java.JavaPlugin;
 import com.shortcircuit.mcinteractive.listeners.MCIEventListener;
 import com.shortcircuit.mcinteractive.listeners.PlayerListener;
 import com.shortcircuit.mcinteractive.listeners.RedstoneListener;
+import com.shortcircuit.mcinteractive.listeners.TrackingManager;
 import com.shortcircuit.mcinteractive.serial.SerialManager;
 
 public class MCInteractive extends JavaPlugin{
     protected SerialManager serial_manager;
+    protected TrackingManager tracking_manager;
     
     public void onEnable(){
+        ConfigurationSerialization.registerClass(MCIBlock.class);
+        ConfigurationSerialization.registerClass(MCIPlayer.class);
         if(!verifyRXTX()) {
             Bukkit.getLogger().severe("[MCInteractive] Cannot proceed with enabling\n"
                     + "\tRXTX library not found\n"
@@ -42,7 +49,8 @@ public class MCInteractive extends JavaPlugin{
         Bukkit.getPluginManager().registerEvents(new RedstoneListener(this), this);
         Bukkit.getPluginManager().registerEvents(new PlayerListener(this), this);
         saveDefaultConfig();
-        serial_manager = new SerialManager();
+        serial_manager = new SerialManager(StringEscapeUtils.unescapeJava(getConfig().getString("delimiter")));
+        tracking_manager = new TrackingManager(getDataFolder() + "");
         if(!getConfig().getString("port").equals("")) {
             serial_manager.connect(getConfig().getString("port"), getConfig().getInt("baud"));
         }
@@ -50,6 +58,7 @@ public class MCInteractive extends JavaPlugin{
     }
     public void onDisable(){
         serial_manager.disconnectSilently();
+        tracking_manager.close();
         Bukkit.getLogger().info("[MCInteractive] MCInteractive disabled");
     }
     
@@ -146,12 +155,11 @@ public class MCInteractive extends JavaPlugin{
                     if(args.length >= 2){
                         String triggerOn = getParam(args, "on");
                         String triggerOff = getParam(args, "off");
-                        if(!triggerOn.equalsIgnoreCase("") && !triggerOff.equalsIgnoreCase("")){
+                        if(!triggerOn.isEmpty() && !triggerOff.isEmpty()){
                             Block block = player.getTargetBlock(null, 5);
                             if(block.getType() != Material.AIR){
+                                tracking_manager.addTracking(block, triggerOn, triggerOff);
                                 player.sendMessage(ChatColor.AQUA + "Successfully set the trigger block!");
-                                block.setMetadata("BreakoutOn", new EntityMetadata(this, triggerOn));
-                                block.setMetadata("BreakoutOff", new EntityMetadata(this, triggerOff));
                             }
                             else{
                                 player.sendMessage(ChatColor.RED + "No block in sight!");
@@ -186,9 +194,10 @@ public class MCInteractive extends JavaPlugin{
                     Block block = player.getTargetBlock(null, 5);
                     if(block.getType() != Material.AIR){
                         if(block.hasMetadata("BreakoutOn") && block.hasMetadata("BreakoutOff")){
+                            if(tracking_manager.isTracking(block)) {
+                                tracking_manager.removeTracking(block);
+                            }
                             player.sendMessage(ChatColor.AQUA + "Successfully removed the trigger block!");
-                            block.removeMetadata("BreakoutOn", this);
-                            block.removeMetadata("BreakoutOff", this);
                         }
                         else{
                             player.sendMessage(ChatColor.RED + "The targeted block is not a trigger");
@@ -214,27 +223,25 @@ public class MCInteractive extends JavaPlugin{
         }
         else if(commandLabel.equalsIgnoreCase("trackplayer")) {
             if(sender.hasPermission("mcinteractive.trigger.player")){
-                String name = getParam(args, "player");
-                if(!name.equalsIgnoreCase("")){
-                    Player player = Bukkit.getPlayer(name);
+                if(args.length >= 1){
+                    Player player = Bukkit.getPlayer(args[0]);
                     if(player != null){
-                        if(player.hasMetadata("isTracking")){
-                            player.setMetadata("isTracking", new EntityMetadata(this,
-                                    !player.getMetadata("isTracking").get(0).asBoolean()));
+                        if(tracking_manager.isTracking(player)) {
+                            tracking_manager.removeTracking(player);
                         }
-                        else{
-                            player.setMetadata("isTracking", new EntityMetadata(this, true));
+                        else {
+                            tracking_manager.addTracking(player);
                         }
                         sender.sendMessage(ChatColor.AQUA + "Set tracking for " + ChatColor.YELLOW
                                 + player.getName() + ChatColor.AQUA + " to "
-                                + ChatColor.YELLOW + player.getMetadata("isTracking").get(0).asBoolean());
+                                + ChatColor.YELLOW + tracking_manager.isTracking(player));
                     }
                     else{
-                        sender.sendMessage(ChatColor.LIGHT_PURPLE + name + ChatColor.RED + " is not online");
+                        sender.sendMessage(ChatColor.LIGHT_PURPLE + args[0] + ChatColor.RED + " is not online");
                     }
                 }
                 else{
-                    sender.sendMessage(ChatColor.RED + "You must provide the paramater <player>");
+                    sender.sendMessage(ChatColor.RED + "You must specify a player");
                 }
             }
             else{
@@ -253,6 +260,9 @@ public class MCInteractive extends JavaPlugin{
     }
     public SerialManager getSerialManager() {
         return serial_manager;
+    }
+    public TrackingManager getTrackingManager() {
+        return tracking_manager;
     }
     protected String getParam(String[] args, String argument){
         boolean collecting = false;

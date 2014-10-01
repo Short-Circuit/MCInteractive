@@ -1,2 +1,4 @@
+# Append this to each message sent over the serial port to indicate end-of-message
+delimiter: \n
 port: COM3
 baud: 9600

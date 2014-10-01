@@ -11,21 +11,19 @@ import org.bukkit.event.entity.EntityShootBowEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
-import org.bukkit.plugin.Plugin;
 
-import com.shortcircuit.mcinteractive.EntityMetadata;
 import com.shortcircuit.mcinteractive.MCInteractive;
 
 public class PlayerListener implements Listener{
-    private MCInteractive mc_interactive;
+    protected MCInteractive mc_interactive;
     public PlayerListener(MCInteractive mc_interactive){
         this.mc_interactive = mc_interactive;
     }
     @EventHandler (priority = EventPriority.MONITOR)
     public void onRedstone(final PlayerMoveEvent event){
         Player player = event.getPlayer();
-        if(player.hasMetadata("isTracking")){
-            if(player.getMetadata("isTracking").get(0).asBoolean()){
+        if(mc_interactive.getTrackingManager().isTracking(player)) {
+            if(mc_interactive.getTrackingManager().getMCIPlayer(player).isTrackingMovement()) {
                 Location from = event.getFrom();
                 Location to = event.getTo();
                 double oldX = from.getX();
@@ -51,15 +49,12 @@ public class PlayerListener implements Listener{
                 }
             }
         }
-        else{
-            player.setMetadata("isTracking", new EntityMetadata((Plugin)mc_interactive, false));
-        }
     }
     @EventHandler (priority = EventPriority.MONITOR)
     public void onInteract(final PlayerInteractEvent event){
         Player player = event.getPlayer();
-        if(player.hasMetadata("isTracking")){
-            if(player.getMetadata("isTracking").get(0).asBoolean()){
+        if(mc_interactive.getTrackingManager().isTracking(player)) {
+            if(mc_interactive.getTrackingManager().getMCIPlayer(player).isTrackingActions()) {
                 try {
                     mc_interactive.getSerialManager().write("Name:" + player.getName());
                     mc_interactive.getSerialManager().write("Action:" + event.getAction());
@@ -73,8 +68,8 @@ public class PlayerListener implements Listener{
     @EventHandler (priority = EventPriority.MONITOR)
     public void onChat(final AsyncPlayerChatEvent event){
         Player player = event.getPlayer();
-        if(player.hasMetadata("isTracking")){
-            if(player.getMetadata("isTracking").get(0).asBoolean()){
+        if(mc_interactive.getTrackingManager().isTracking(player)) {
+            if(mc_interactive.getTrackingManager().getMCIPlayer(player).isTrackingChat()) {
                 try {
                     mc_interactive.getSerialManager().write("Name:" + player.getName());
                     mc_interactive.getSerialManager().write("Message:" + event.getMessage());
@@ -89,8 +84,8 @@ public class PlayerListener implements Listener{
     public void onShootBow(final EntityShootBowEvent event){
         if(event.getEntity() instanceof Player){
             Player player = (Player)event.getEntity();
-            if(player.hasMetadata("isTracking")){
-                if(player.getMetadata("isTracking").get(0).asBoolean()){
+            if(mc_interactive.getTrackingManager().isTracking(player)) {
+                if(mc_interactive.getTrackingManager().getMCIPlayer(player).isTrackingProjectiles()) {
                     try {
                         mc_interactive.getSerialManager().write("Name:" + player.getName());
                         mc_interactive.getSerialManager().write("Projectile:ARROW");

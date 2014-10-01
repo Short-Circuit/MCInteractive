@@ -1,5 +1,6 @@
 package com.shortcircuit.mcinteractive.listeners;
 
+import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 
@@ -24,5 +25,6 @@ public class MCIEventListener implements Listener{
     }
     @EventHandler
     public void onMessage(final MCIMessageReceivedEvent event) {
+        Bukkit.getLogger().info(event.getMessage());
     }
 }
