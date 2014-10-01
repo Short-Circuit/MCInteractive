@@ -17,16 +17,14 @@ import org.bukkit.craftbukkit.v1_7_R3.command.CraftBlockCommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import com.shortcircuit.mcinteractive.listeners.MCIEventListener;
 import com.shortcircuit.mcinteractive.listeners.PlayerListener;
 import com.shortcircuit.mcinteractive.listeners.RedstoneListener;
-import com.shortcircuit.mcinteractive.listeners.ThingeyListener;
 import com.shortcircuit.mcinteractive.serial.SerialManager;
 
 public class MCInteractive extends JavaPlugin{
-    private SerialManager serial_manager;
-    public void onLoad(){
-
-    }
+    protected SerialManager serial_manager;
+    
     public void onEnable(){
         if(!verifyRXTX()) {
             Bukkit.getLogger().severe("[MCInteractive] Cannot proceed with enabling\n"
@@ -39,8 +37,8 @@ public class MCInteractive extends JavaPlugin{
         else {
             Bukkit.getLogger().info("[MCInteractive] RXTX library located");
         }
-        Bukkit.getPluginManager().registerEvents(new ThingeyListener(), this);
         Bukkit.getLogger().info("[MCInteractive] MCInteractive by ShortCircuit908");
+        Bukkit.getPluginManager().registerEvents(new MCIEventListener(), this);
         Bukkit.getPluginManager().registerEvents(new RedstoneListener(this), this);
         Bukkit.getPluginManager().registerEvents(new PlayerListener(this), this);
         saveDefaultConfig();
@@ -256,7 +254,7 @@ public class MCInteractive extends JavaPlugin{
     public SerialManager getSerialManager() {
         return serial_manager;
     }
-    private String getParam(String[] args, String argument){
+    protected String getParam(String[] args, String argument){
         boolean collecting = false;
         argument = argument.toLowerCase();
         String output = "";

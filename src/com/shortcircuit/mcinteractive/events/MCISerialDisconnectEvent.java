@@ -1,25 +1,14 @@
 package com.shortcircuit.mcinteractive.events;
 
-import org.bukkit.event.Event;
-import org.bukkit.event.HandlerList;
+import gnu.io.CommPortIdentifier;
 
 /**
  * @author ShortCircuit908
  * 
  */
-public class MCISerialDisconnectEvent extends Event{
-    private static final HandlerList handlers = new HandlerList();
+public class MCISerialDisconnectEvent extends MCIEvent{
     
-    public MCISerialDisconnectEvent() {
-        
-    }
-    
-    @Override
-    public HandlerList getHandlers() {
-        return handlers;
-    }
-    
-    public static HandlerList getHandlerList() {
-        return handlers;
+    public MCISerialDisconnectEvent(CommPortIdentifier port_id) {
+        super(port_id);
     }
 }

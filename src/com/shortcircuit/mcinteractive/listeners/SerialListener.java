@@ -1,10 +1,13 @@
 package com.shortcircuit.mcinteractive.listeners;
 
+import gnu.io.CommPortIdentifier;
 import gnu.io.SerialPortEvent;
 import gnu.io.SerialPortEventListener;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 
 import org.bukkit.Bukkit;
 
@@ -16,12 +19,12 @@ import com.shortcircuit.mcinteractive.events.MCISerialPortEvent;
  * 
  */
 public class SerialListener implements SerialPortEventListener{
-    private byte[] read_buffer = new byte[400];
-    private String received = "";
-    private InputStream inStream;
+    protected BufferedReader reader;
+    protected CommPortIdentifier port_id;
     
-    public SerialListener(InputStream inStream) {
-        this.inStream = inStream;
+    public SerialListener(CommPortIdentifier port_id, InputStream input_stream) {
+        this.port_id = port_id;
+        this.reader = new BufferedReader(new InputStreamReader(input_stream));
     }
     
     /*
@@ -34,7 +37,7 @@ public class SerialListener implements SerialPortEventListener{
             readSerial();
         }
         // Fire a new MCISerialPortEvent
-        Bukkit.getPluginManager().callEvent(new MCISerialPortEvent(event));
+        Bukkit.getPluginManager().callEvent(new MCISerialPortEvent(port_id, event));
     }
     
     /*
@@ -42,21 +45,8 @@ public class SerialListener implements SerialPortEventListener{
      */
     private void readSerial() {
         try {
-            // Get the number of available bytes
-            int available_bytes = inStream.available();
-            if (available_bytes > 0) {
-                // Read from the stream to the buffer
-                inStream.read(read_buffer, 0, available_bytes);
-                // Append the received data
-                received += new String(read_buffer, 0, available_bytes);
-                // Check for end-of-message
-                if(received.endsWith("\n")) {
-                    // Fire a new MCIMessageReceivedEvent
-                    Bukkit.getPluginManager().callEvent(new MCIMessageReceivedEvent(received));
-                    // Reset the string
-                    received = "";
-                }
-            }
+            String message = reader.readLine();
+            Bukkit.getPluginManager().callEvent(new MCIMessageReceivedEvent(port_id, message));
         }
         catch (IOException e) {
             e.printStackTrace();

@@ -1,19 +1,17 @@
 package com.shortcircuit.mcinteractive.events;
 
+import gnu.io.CommPortIdentifier;
 import gnu.io.SerialPortEvent;
-
-import org.bukkit.event.Event;
-import org.bukkit.event.HandlerList;
 
 /**
  * @author ShortCircuit908
  * 
  */
-public class MCISerialPortEvent extends Event{
-    private static final HandlerList handlers = new HandlerList();
+public class MCISerialPortEvent extends MCIEvent{
     private SerialPortEvent event;
     
-    public MCISerialPortEvent(SerialPortEvent event) {
+    public MCISerialPortEvent(CommPortIdentifier port_id, SerialPortEvent event) {
+        super(port_id);
         this.event = event;
     }
     
@@ -27,20 +25,5 @@ public class MCISerialPortEvent extends Event{
     
     public boolean getOldValue() {
         return event.getOldValue();
-    }
-    
-    /*
-    public Object getSource() {
-        return event.getSource();
-    }
-    */
-    
-    @Override
-    public HandlerList getHandlers() {
-        return handlers;
-    }
-    
-    public static HandlerList getHandlerList() {
-        return handlers;
     }
 }

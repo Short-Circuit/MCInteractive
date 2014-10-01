@@ -1,30 +1,21 @@
 package com.shortcircuit.mcinteractive.events;
 
-import org.bukkit.event.Event;
-import org.bukkit.event.HandlerList;
+import gnu.io.CommPortIdentifier;
 
 /**
  * @author ShortCircuit908
  * 
  */
-public class MCIMessageReceivedEvent extends Event{
-    private static final HandlerList handlers = new HandlerList();
+public class MCIMessageReceivedEvent extends MCIEvent{
     private String message;
     
-    public MCIMessageReceivedEvent(String message) {
+    public MCIMessageReceivedEvent(CommPortIdentifier port_id, String message) {
+        super(port_id);
         this.message = message;
-    }
-
-    @Override
-    public HandlerList getHandlers() {
-        return handlers;
     }
     
     public String getMessage() {
         return message;
     }
     
-    public static HandlerList getHandlerList() {
-        return handlers;
-    }
 }
