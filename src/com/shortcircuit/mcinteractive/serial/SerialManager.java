@@ -163,7 +163,7 @@ public class SerialManager {
     }
 
     protected void alert(String message) {
-        Bukkit.getServer().broadcast(message, "MCInteractive.Serial");
+        Bukkit.getServer().broadcast(message, "mcinteractive.serial");
         Bukkit.getConsoleSender().sendMessage(message);
     }
 }

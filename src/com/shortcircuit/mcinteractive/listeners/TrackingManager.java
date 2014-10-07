@@ -97,6 +97,16 @@ public class TrackingManager {
     }
 
     public void close() {
+        try {
+            block_file.delete();
+            block_file.createNewFile();
+            player_file.delete();
+            player_file.createNewFile();
+        }
+        catch(IOException e) {
+            e.printStackTrace();
+        }
+        load();
         for(String key : blocks.keySet()) {
             block_tracking.set(key, blocks.get(key));
         }
@@ -108,15 +118,14 @@ public class TrackingManager {
 
     private String getNameFromBlock(Block block) {
         Location location = block.getLocation();
-        return location.getWorld().getName() + "," + location.getBlockX() + "," + location.getBlockY()
-                + "," + location.getBlockZ();
+        return location.getWorld().getName() + "," + (int)location.getX() + "," + (int)location.getY()
+                + "," + (int)location.getZ();
     }
-
     /*
     private Block getBlockFromName(String name) {
         String[] loc = name.split(",");
         return Bukkit.getWorld(loc[0]).getBlockAt(Integer.parseInt(loc[1]), Integer.parseInt(loc[2]),
                 Integer.parseInt(loc[3]));
     }
-     */
+    */
 }

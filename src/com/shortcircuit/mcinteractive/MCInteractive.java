@@ -29,7 +29,7 @@ import com.shortcircuit.mcinteractive.serial.SerialManager;
 public class MCInteractive extends JavaPlugin{
     protected SerialManager serial_manager;
     protected TrackingManager tracking_manager;
-    
+
     public void onEnable(){
         ConfigurationSerialization.registerClass(MCIBlock.class);
         ConfigurationSerialization.registerClass(MCIPlayer.class);
@@ -61,7 +61,7 @@ public class MCInteractive extends JavaPlugin{
         tracking_manager.close();
         Bukkit.getLogger().info("[MCInteractive] MCInteractive disabled");
     }
-    
+
     /*
      * TODO: Make this pretty
      */
@@ -193,10 +193,8 @@ public class MCInteractive extends JavaPlugin{
                 if(player.hasPermission("mcinteractive.trigger.remove")){
                     Block block = player.getTargetBlock(null, 5);
                     if(block.getType() != Material.AIR){
-                        if(block.hasMetadata("BreakoutOn") && block.hasMetadata("BreakoutOff")){
-                            if(tracking_manager.isTracking(block)) {
-                                tracking_manager.removeTracking(block);
-                            }
+                        if(tracking_manager.isTracking(block)) {
+                            tracking_manager.removeTracking(block);
                             player.sendMessage(ChatColor.AQUA + "Successfully removed the trigger block!");
                         }
                         else{
