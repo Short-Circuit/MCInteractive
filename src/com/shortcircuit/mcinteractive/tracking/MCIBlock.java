@@ -1,4 +1,4 @@
-package com.shortcircuit.mcinteractive;
+package com.shortcircuit.mcinteractive.tracking;
 
 import java.util.HashMap;
 import java.util.Map;

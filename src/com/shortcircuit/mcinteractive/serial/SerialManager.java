@@ -11,9 +11,11 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.TooManyListenersException;
 
+import org.apache.commons.lang.StringUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 
+import com.shortcircuit.mcinteractive.events.MCIMessageSentEvent;
 import com.shortcircuit.mcinteractive.events.MCISerialConnectEvent;
 import com.shortcircuit.mcinteractive.events.MCISerialDisconnectEvent;
 import com.shortcircuit.mcinteractive.listeners.SerialListener;
@@ -89,6 +91,7 @@ public class SerialManager {
             disconnect();
         }
         catch(Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -155,6 +158,8 @@ public class SerialManager {
             }
             output_stream.write(value.getBytes());
             output_stream.flush();
+            Bukkit.getPluginManager().callEvent(new MCIMessageSentEvent(port_id,
+                    StringUtils.removeEnd(value, delimiter)));
         }
     }
 

@@ -11,7 +11,7 @@ import org.bukkit.event.HandlerList;
  */
 public abstract class MCIEvent extends Event{
     private static final HandlerList handlers = new HandlerList();
-    private final CommPortIdentifier comm_port;
+    protected final CommPortIdentifier comm_port;
     
     public MCIEvent(CommPortIdentifier comm_port) {
         this.comm_port = comm_port;

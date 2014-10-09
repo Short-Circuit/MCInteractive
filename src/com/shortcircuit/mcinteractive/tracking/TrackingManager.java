@@ -1,4 +1,4 @@
-package com.shortcircuit.mcinteractive.listeners;
+package com.shortcircuit.mcinteractive.tracking;
 
 import java.io.File;
 import java.io.IOException;
@@ -9,9 +9,6 @@ import org.bukkit.block.Block;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
-
-import com.shortcircuit.mcinteractive.MCIBlock;
-import com.shortcircuit.mcinteractive.MCIPlayer;
 
 /**
  * @author ShortCircuit908

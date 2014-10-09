@@ -8,7 +8,7 @@ import gnu.io.SerialPortEvent;
  * 
  */
 public class MCISerialPortEvent extends MCIEvent{
-    private SerialPortEvent event;
+    protected SerialPortEvent event;
     
     public MCISerialPortEvent(CommPortIdentifier port_id, SerialPortEvent event) {
         super(port_id);
@@ -25,5 +25,9 @@ public class MCISerialPortEvent extends MCIEvent{
     
     public boolean getOldValue() {
         return event.getOldValue();
+    }
+    
+    public Class<?> getEventClass(){
+        return event.getClass();
     }
 }

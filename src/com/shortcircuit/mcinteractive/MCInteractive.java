@@ -23,8 +23,10 @@ import org.bukkit.plugin.java.JavaPlugin;
 import com.shortcircuit.mcinteractive.listeners.MCIEventListener;
 import com.shortcircuit.mcinteractive.listeners.PlayerListener;
 import com.shortcircuit.mcinteractive.listeners.RedstoneListener;
-import com.shortcircuit.mcinteractive.listeners.TrackingManager;
 import com.shortcircuit.mcinteractive.serial.SerialManager;
+import com.shortcircuit.mcinteractive.tracking.MCIBlock;
+import com.shortcircuit.mcinteractive.tracking.MCIPlayer;
+import com.shortcircuit.mcinteractive.tracking.TrackingManager;
 
 public class MCInteractive extends JavaPlugin{
     protected SerialManager serial_manager;
@@ -34,10 +36,10 @@ public class MCInteractive extends JavaPlugin{
         ConfigurationSerialization.registerClass(MCIBlock.class);
         ConfigurationSerialization.registerClass(MCIPlayer.class);
         if(!verifyRXTX()) {
-            Bukkit.getLogger().severe("[MCInteractive] Cannot proceed with enabling\n"
+            Bukkit.getLogger().severe("[MCInteractive] A required library was not located\n"
                     + "\tRXTX library not found\n"
-                    + "\tThe library may be downloaded at mfizz.com/oss/rxtx-for-java\n"
-                    + "\tDisabling...");
+                    + "\tThe library may be downloaded at mfizz.com/oss/rxtx-for-java\n");
+            Bukkit.getLogger().severe("Disabling...");
             setEnabled(false);
             return;
         }
@@ -45,7 +47,7 @@ public class MCInteractive extends JavaPlugin{
             Bukkit.getLogger().info("[MCInteractive] RXTX library located");
         }
         Bukkit.getLogger().info("[MCInteractive] MCInteractive by ShortCircuit908");
-        Bukkit.getPluginManager().registerEvents(new MCIEventListener(), this);
+        Bukkit.getPluginManager().registerEvents(new MCIEventListener(getConfig().getBoolean("logToConsole")), this);
         Bukkit.getPluginManager().registerEvents(new RedstoneListener(this), this);
         Bukkit.getPluginManager().registerEvents(new PlayerListener(this), this);
         saveDefaultConfig();
@@ -56,6 +58,7 @@ public class MCInteractive extends JavaPlugin{
         }
         Bukkit.getLogger().info("[MCInteractive] MCInteractive enabled");
     }
+    
     public void onDisable(){
         serial_manager.disconnectSilently();
         tracking_manager.close();
@@ -249,6 +252,7 @@ public class MCInteractive extends JavaPlugin{
         }
         return false;
     }
+    
     public boolean verifyRXTX() {
         String java_home = System.getProperty("java.home");
         File rxtx_jar = new File(java_home + "/lib/ext/RXTXcomm.jar");
@@ -256,12 +260,14 @@ public class MCInteractive extends JavaPlugin{
         File rxtx_serial = new File(java_home + "/bin/rxtxSerial.dll");
         return (rxtx_jar.exists() && rxtx_parallel.exists() && rxtx_serial.exists());
     }
+    
     public SerialManager getSerialManager() {
         return serial_manager;
     }
     public TrackingManager getTrackingManager() {
         return tracking_manager;
     }
+    
     protected String getParam(String[] args, String argument){
         boolean collecting = false;
         argument = argument.toLowerCase();
